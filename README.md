@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🎓 Campus Farewell Board
 
-## Getting Started
+A real-time, anonymous campus engagement platform built for graduating students. Leave a legacy, drop a confession, create interactive polls, and anonymously rate your peers on a unified, high-fidelity glassmorphic feed.
 
-First, run the development server:
+## 🚀 Features
+
+- **Unified Live Feed**: A centralized scrolling feed that aggregates anonymous confessions, interactive polls, and peer ratings in real-time.
+- **Ghost Identities**: Users adopt a permanent, session-based "Ghost Alias" ensuring complete anonymity while maintaining consistent interactions across the platform.
+- **Anonymous Confessions**: Drop your deepest secrets, farewell messages, or shoutouts to classmates. 
+- **Peer Ratings & Leaderboards**: Drop an anonymous score out of 5 stars for your classmates. View the aggregate averages and see who tops the leaderboard.
+- **Interactive Polls**: Deploy custom polls to the timeline and let the campus vote.
+- **Live Reactions & Comments**: Engage with the feed through dynamic emoji reactions and threaded comments.
+- **Glassmorphic UI**: Premium "Dark Acid Glass" design utilizing Framer Motion micro-animations and Tailwind CSS.
+
+## 🛠️ Tech Stack
+
+- **Framework**: Next.js 15+ (App Router)
+- **Database**: MongoDB (Mongoose ORM)
+- **Styling**: Tailwind CSS & Framer Motion
+- **Icons**: Lucide React
+
+## 💻 Running Locally
+
+First, clone the repository and install the dependencies:
+
+```bash
+git clone https://github.com/Uzair42/Anonymous_Coffession_RatingGame-.git
+cd farewell-web
+npm install
+```
+
+Next, create a `.env.local` file in the root directory and add your MongoDB connection string:
+
+```env
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/farewell?retryWrites=true&w=majority
+NEXTAUTH_SECRET=your_super_secret_string
+NEXTAUTH_URL=http://localhost:3000
+```
+
+Finally, run the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to explore the void.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌐 Deploying to Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Push your repository to GitHub.
+2. Log into [Vercel](https://vercel.com) and click **Add New Project**.
+3. Import your GitHub repository.
+4. Go to **Environment Variables** and add all the keys from your `.env.local` file.
+5. Click **Deploy**.
 
-## Learn More
+## 📄 License
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is open-source and available under the [MIT License](LICENSE).
