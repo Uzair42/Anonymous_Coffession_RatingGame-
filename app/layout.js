@@ -4,8 +4,8 @@ import { AliasProvider } from "@/components/AliasProvider";
 import "./globals.css";
 
 export const metadata = {
-  title: "Campus Farewell Board",
-  description: "Anonymous campus confession and farewell board.",
+  title: "IT Batch Farewell Board",
+  description: "Anonymous IT Batch confession and farewell board.",
 };
 
 export default function RootLayout({ children }) {

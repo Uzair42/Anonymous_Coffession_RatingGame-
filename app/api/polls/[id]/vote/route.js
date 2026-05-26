@@ -6,14 +6,14 @@ import { isBanned } from '@/lib/banCheck';
 
 export async function POST(req, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const clientInfo = getClientInfo(req);
     const banned = await isBanned(clientInfo.ip);
     if (banned) {
       return NextResponse.json({ error: 'Your device has been banned from posting.' }, { status: 403 });
     }
 
-    const { option, description } = await req.json();
+    const { option, description, alias } = await req.json();
     if (!option) {
       return NextResponse.json({ error: 'Missing option' }, { status: 400 });
     }
@@ -29,7 +29,7 @@ export async function POST(req, { params }) {
     }
 
     // Check if IP already voted
-    const alreadyVoted = poll.votes.some(v => v.deviceFingerprint.ip === clientInfo.ip);
+    const alreadyVoted = poll.votes.some(v => v.deviceFingerprint?.ip === clientInfo.ip);
     if (alreadyVoted) {
       return NextResponse.json({ error: 'You have already voted in this poll' }, { status: 403 });
     }
@@ -37,6 +37,7 @@ export async function POST(req, { params }) {
     poll.votes.push({
       option,
       description,
+      alias: alias || 'Ghost',
       deviceFingerprint: clientInfo
     });
     await poll.save();

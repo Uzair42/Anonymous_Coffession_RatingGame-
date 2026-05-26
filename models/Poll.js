@@ -8,6 +8,8 @@ const PollSchema = new mongoose.Schema({
   votes: [{
     option: String,
     description: String,
+    alias: { type: String, default: 'Ghost' },
+    createdAt: { type: Date, default: Date.now },
     deviceFingerprint: {
       ip: String,
       userAgent: String,

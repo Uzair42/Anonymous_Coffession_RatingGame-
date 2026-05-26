@@ -4,22 +4,41 @@ import Poll from '@/models/Poll';
 import { getClientInfo } from '@/lib/clientInfo';
 import { isBanned } from '@/lib/banCheck';
 
-export async function GET() {
+export async function GET(req) {
   try {
+    const clientInfo = getClientInfo(req);
     await dbConnect();
     const polls = await Poll.find({ status: 'Active' }).lean();
     
     const formattedPolls = polls.map(p => {
       const voteCounts = {};
-      p.votes.forEach(v => {
+      const votesArray = p.votes || [];
+      
+      votesArray.forEach(v => {
         voteCounts[v.option] = (voteCounts[v.option] || 0) + 1;
       });
+
+      const userVote = votesArray.find(v => v.deviceFingerprint?.ip === clientInfo.ip);
+
+      const justifications = votesArray
+        .filter(v => v.description && v.description.trim() !== '')
+        .map(v => ({
+          alias: v.alias || 'Ghost',
+          option: v.option,
+          description: v.description,
+          createdAt: v.createdAt || new Date()
+        }))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
       return {
         _id: p._id,
         question: p.question,
         options: p.options,
         voteCounts,
-        authorName: p.authorName || 'Anonymous'
+        authorName: p.authorName || 'Anonymous',
+        hasVoted: !!userVote,
+        userVotedOption: userVote ? userVote.option : null,
+        justifications
       };
     });
 
