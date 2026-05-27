@@ -324,14 +324,50 @@ export default function AdminDashboard({ session }) {
                     </div>
                     
                     <div className="space-y-4">
-                      <h4 className="font-bold text-gray-500 uppercase">Raw Votes (God View)</h4>
-                      {p.votes.map((v, i) => (
-                        <div key={i} className="p-4 bg-gray-100 border-2 border-black text-sm">
-                          <p className="text-lg font-bold">Voted: <span className="text-[#ff3300]">{v.option}</span></p>
-                          {v.description && <p className="italic mb-2">"{v.description}"</p>}
-                          <DeviceInfo fp={v.deviceFingerprint} />
-                        </div>
-                      ))}
+                      <h4 className="font-bold text-gray-500 uppercase">Raw Votes (God View Audit Stream)</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {p.votes.map((v, i) => (
+                          <div key={i} className="p-4 bg-white border-4 border-black text-sm brutal-shadow space-y-3">
+                            <div className="flex justify-between items-start border-b-2 border-black pb-2 gap-2 flex-wrap">
+                              <div>
+                                <p className="text-xs font-black uppercase text-gray-400">Voter Alias</p>
+                                <p className="text-lg font-black text-black">{v.alias || 'Ghost'}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-xs font-black uppercase text-gray-400">Timestamp</p>
+                                <p className="text-xs font-mono font-bold text-gray-700">
+                                  {v.createdAt ? new Date(v.createdAt).toLocaleString() : 'N/A'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div>
+                              <p className="text-xs font-black uppercase text-gray-400 mb-1">Option Chosen</p>
+                              <span className="bg-[#c0ff00] text-black border-2 border-black px-3 py-1 font-black uppercase text-xs inline-block">
+                                {v.option}
+                              </span>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-black uppercase text-gray-400 mb-1">Review Message</p>
+                              {v.description && v.description.trim() !== '' ? (
+                                <div className="bg-[#c0ff00]/10 border-2 border-black p-3 font-sans italic text-black font-semibold">
+                                  "{v.description}"
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400 italic font-mono uppercase bg-gray-100 border-2 border-dashed border-gray-300 px-2 py-1 inline-block">
+                                  No justification review provided
+                                </span>
+                              )}
+                            </div>
+
+                            <DeviceInfo fp={v.deviceFingerprint} />
+                          </div>
+                        ))}
+                      </div>
+                      {(!p.votes || p.votes.length === 0) && (
+                        <p className="text-gray-400 italic uppercase font-bold text-sm border-2 border-dashed border-black/20 p-4 text-center">No votes recorded yet.</p>
+                      )}
                     </div>
                   </div>
                 ))}
