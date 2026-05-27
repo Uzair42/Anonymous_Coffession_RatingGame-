@@ -1,6 +1,7 @@
 import { Providers } from "@/components/Providers";
 import Navbar from "@/components/Navbar";
 import { AliasProvider } from "@/components/AliasProvider";
+import { Analytics } from "@vercel/analytics/react";
 import "./globals.css";
 
 export const metadata = {
@@ -18,9 +19,11 @@ export default function RootLayout({ children }) {
               {children}
             </div>
             <Navbar />
+            <Analytics />
           </AliasProvider>
         </Providers>
       </body>
     </html>
   );
 }
+
