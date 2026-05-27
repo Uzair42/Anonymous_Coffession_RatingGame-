@@ -24,12 +24,71 @@ function PostCard({ c, allowedEmojis, onReact, onComment }) {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState('');
   
+  // Confession editing states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editText, setEditText] = useState(c.bodyText);
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    const myIds = JSON.parse(localStorage.getItem('myConfessionIds') || '[]');
+    if (!myIds.includes(c._id)) return;
+
+    const calculateTimeLeft = () => {
+      const diff = 5 * 60 * 1000 - (new Date() - new Date(c.createdAt));
+      return Math.max(0, Math.floor(diff / 1000));
+    };
+
+    setTimeLeft(calculateTimeLeft());
+
+    const timer = setInterval(() => {
+      const remaining = calculateTimeLeft();
+      setTimeLeft(remaining);
+      if (remaining <= 0) {
+        clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [c.createdAt, c._id]);
+
   const handleComment = (e) => {
     e.preventDefault();
     const alias = localStorage.getItem('aliasName') || 'Ghost';
     if(!commentText) return;
     onComment(c._id, commentText, alias);
     setCommentText('');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editText.trim()) return;
+    setIsSaving(true);
+    setEditError('');
+    try {
+      const res = await fetch('/api/confessions', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: c._id, bodyText: editText })
+      });
+      if (res.ok) {
+        setIsEditing(false);
+        c.bodyText = editText;
+      } else {
+        const errData = await res.json();
+        setEditError(errData.error || 'Failed to update confession.');
+      }
+    } catch (err) {
+      setEditError('Connection error.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const formatTimeLeft = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
   return (
@@ -43,19 +102,74 @@ function PostCard({ c, allowedEmojis, onReact, onComment }) {
     >
       <div className="absolute -top-20 -right-20 w-40 h-40 bg-[#c0ff00] opacity-0 group-hover:opacity-10 blur-[60px] rounded-full transition-opacity duration-700"></div>
 
-      <div className="flex items-center gap-4 mb-6 pb-4 border-b border-white/10">
-        <div className="w-12 h-12 bg-gradient-to-br from-[#c0ff00] to-[#80aa00] rounded-full flex items-center justify-center font-black text-black text-xl shadow-[0_0_15px_rgba(192,255,0,0.3)]">
-          {c.authorName[0]?.toUpperCase() || '?'}
+      <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-[#c0ff00] to-[#80aa00] rounded-full flex items-center justify-center font-black text-black text-xl shadow-[0_0_15px_rgba(192,255,0,0.3)]">
+            {c.authorName[0]?.toUpperCase() || '?'}
+          </div>
+          <div>
+            <span className="font-bold text-white text-lg block">{c.authorName}</span>
+            <span className="text-xs text-gray-400 font-sans tracking-wide">Anonymous Contributor</span>
+          </div>
         </div>
-        <div>
-          <span className="font-bold text-white text-lg block">{c.authorName}</span>
-          <span className="text-xs text-gray-400 font-sans tracking-wide">Anonymous Contributor</span>
-        </div>
+
+        {/* Live Cooling Draft Room Badge */}
+        {timeLeft > 0 && (
+          <div className="bg-[#ff3300]/10 border border-[#ff3300]/30 rounded-xl px-3 py-1 flex items-center gap-2 text-right">
+            <span className="w-2 h-2 rounded-full bg-[#ff3300] animate-pulse"></span>
+            <span className="text-[10px] font-black uppercase text-[#ff3300] tracking-widest font-mono">
+              Draft Mode • Edit for {formatTimeLeft(timeLeft)}
+            </span>
+          </div>
+        )}
       </div>
       
-      <p className="text-xl md:text-2xl mb-8 leading-relaxed whitespace-pre-wrap text-gray-100 font-sans">
-        {c.bodyText}
-      </p>
+      {isEditing ? (
+        <div className="space-y-4 mb-8">
+          <textarea
+            required
+            rows={4}
+            value={editText}
+            onChange={e => setEditText(e.target.value)}
+            className="w-full bg-black/40 border border-white/10 rounded-xl p-4 text-white font-sans focus:outline-none focus:border-[#c0ff00] transition-all resize-none"
+          />
+          {editError && <p className="text-xs font-bold uppercase text-[#ff3300]">{editError}</p>}
+          <div className="flex gap-2">
+            <button
+              onClick={handleSaveEdit}
+              disabled={isSaving}
+              className="bg-[#c0ff00] hover:bg-white text-black font-black px-4 py-2 rounded-xl text-xs uppercase transition-colors cursor-pointer"
+            >
+              {isSaving ? 'Saving...' : 'Save Draft'}
+            </button>
+            <button
+              onClick={() => {
+                setIsEditing(false);
+                setEditText(c.bodyText);
+              }}
+              className="bg-white/10 hover:bg-white/20 text-white font-black px-4 py-2 rounded-xl text-xs uppercase transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="relative mb-8">
+          <p className="text-xl md:text-2xl leading-relaxed whitespace-pre-wrap text-gray-100 font-sans">
+            {c.bodyText}
+          </p>
+          
+          {/* Edit button */}
+          {timeLeft > 0 && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="mt-3 bg-[#c0ff00] hover:bg-white text-black font-black px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(192,255,0,0.2)]"
+            >
+              Edit Confession
+            </button>
+          )}
+        </div>
+      )}
       
       <div className="flex flex-wrap items-center justify-between pt-2 gap-4">
         <div className="flex flex-wrap gap-2">

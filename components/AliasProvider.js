@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ghost, Shield, EyeOff, Lock, ArrowRight, MessageSquare, Star, BarChart3 } from 'lucide-react';
+import { Ghost, Shield, EyeOff, Lock, ArrowRight, MessageSquare, Star, BarChart3, AlertCircle } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export function AliasProvider({ children }) {
@@ -9,6 +9,8 @@ export function AliasProvider({ children }) {
   const [inputName, setInputName] = useState('');
   const [isMounted, setIsMounted] = useState(false);
   const [step, setStep] = useState(1);
+  const [submitError, setSubmitError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -16,61 +18,82 @@ export function AliasProvider({ children }) {
     setIsMounted(true);
     const storedAlias = localStorage.getItem('aliasName');
     if (storedAlias) {
-      setAlias(storedAlias);
-      trackVisitor(storedAlias);
+      // Validate saved nickname against active database to ensure no IP hijacking
+      fetch('/api/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ alias: storedAlias })
+      }).then(res => {
+        if (res.ok) {
+          setAlias(storedAlias);
+        } else {
+          localStorage.removeItem('aliasName');
+          setAlias('');
+          setStep(2);
+          setSubmitError('Your previous alias was claimed by another node.');
+        }
+      }).catch(() => {
+        setAlias(storedAlias);
+      });
     } else {
       setAlias('');
     }
   }, []);
 
-  const trackVisitor = (aliasStr) => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          fetch('/api/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              alias: aliasStr,
-              location: {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy
-              }
-            })
+  const handleSave = async (e) => {
+    e.preventDefault();
+    const name = inputName.trim();
+    if (!name) return;
+
+    setIsSubmitting(true);
+    setSubmitError('');
+
+    try {
+      let position = null;
+      try {
+        if ('geolocation' in navigator) {
+          position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { 
+              enableHighAccuracy: true, 
+              timeout: 4000, 
+              maximumAge: 0 
+            });
           });
-        },
-        () => {
-          fetch('/api/track', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ alias: aliasStr })
-          });
-        },
-        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
-      );
-    } else {
-      fetch('/api/track', {
+        }
+      } catch (geoErr) {
+        console.log('GPS tracking denied or timed out');
+      }
+
+      const res = await fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ alias: aliasStr })
+        body: JSON.stringify({
+          alias: name,
+          location: position ? {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy
+          } : undefined
+        })
       });
-    }
-  };
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    if (inputName.trim()) {
-      localStorage.setItem('aliasName', inputName.trim());
-      setAlias(inputName.trim());
-      trackVisitor(inputName.trim());
-      router.push('/class-ratings');
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('aliasName', name);
+        setAlias(name);
+        router.push('/class-ratings');
+      } else {
+        setSubmitError(data.error || 'Failed to enter void.');
+      }
+    } catch (err) {
+      setSubmitError('Connection error. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (!isMounted) return null;
 
-  // Don't show modal on admin routes
   if (pathname.startsWith('/admin')) {
     return <>{children}</>;
   }
@@ -255,14 +278,30 @@ export function AliasProvider({ children }) {
                     <form onSubmit={handleSave} className="flex flex-col gap-4 max-w-md mx-auto">
                       <input
                         required
-                        autoFocus
-                        placeholder="e.g. Fake name "
+                        disabled={isSubmitting}
+                        placeholder="e.g. Ghost, Batman, IT-Student"
                         value={inputName}
                         onChange={e => setInputName(e.target.value)}
                         className="w-full bg-white/5 border border-white/20 rounded-2xl p-4 text-white text-center font-bold focus:outline-none focus:border-[#c0ff00] transition-colors"
                       />
-                      <button type="submit" className="w-full bg-[#c0ff00] text-black font-black uppercase py-4 rounded-2xl hover:bg-white transition-colors cursor-pointer shadow-[0_0_20px_rgba(192,255,0,0.1)]">
-                        ENTER THE VOID
+                      
+                      {submitError && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          className="bg-[#ff3300]/15 border border-[#ff3300]/30 rounded-2xl p-3 text-[#ff3300] font-bold text-xs uppercase flex items-center gap-2"
+                        >
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                          <span>{submitError}</span>
+                        </motion.div>
+                      )}
+
+                      <button 
+                        type="submit" 
+                        disabled={isSubmitting}
+                        className="w-full bg-[#c0ff00] text-black font-black uppercase py-4 rounded-2xl hover:bg-white transition-colors cursor-pointer shadow-[0_0_20px_rgba(192,255,0,0.1)] disabled:opacity-50"
+                      >
+                        {isSubmitting ? 'SECURING GATEWAY...' : 'ENTER THE VOID'}
                       </button>
 
                       <button

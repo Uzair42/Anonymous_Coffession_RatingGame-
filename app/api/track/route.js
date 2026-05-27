@@ -13,16 +13,33 @@ export async function POST(req) {
     const clientInfo = getClientInfo(req);
     await dbConnect();
 
-    // Check if this IP already exists
-    let visitor = await Visitor.findOne({ 'deviceFingerprint.ip': clientInfo.ip });
+    const cleanAlias = alias.trim();
+
+    // Enforce case-insensitive uniqueness check:
+    // Reject if a different device (with a different IP) has claimed this alias.
+    const duplicate = await Visitor.findOne({
+      alias: { $regex: new RegExp(`^${cleanAlias}$`, 'i') },
+      'deviceFingerprint.ip': { $ne: clientInfo.ip }
+    });
+
+    if (duplicate) {
+      return NextResponse.json({ 
+        error: 'This ghost alias is already claimed by another node in the void. Choose another.' 
+      }, { status: 400 });
+    }
+
+    // Lookup existing profile matching BOTH device IP and this specific alias.
+    // This allows the same device fingerprint/location to register multiple different names cleanly.
+    let visitor = await Visitor.findOne({ 
+      'deviceFingerprint.ip': clientInfo.ip, 
+      alias: cleanAlias 
+    });
 
     if (visitor) {
-      visitor.alias = alias;
       visitor.lastSeen = new Date();
       visitor.visitCount += 1;
       visitor.deviceFingerprint = clientInfo;
       
-      // Only update location if new valid location is provided
       if (location && location.lat && location.lng) {
         visitor.location = location;
       }
@@ -30,7 +47,7 @@ export async function POST(req) {
       await visitor.save();
     } else {
       visitor = new Visitor({
-        alias,
+        alias: cleanAlias,
         deviceFingerprint: clientInfo,
         location: (location && location.lat) ? location : undefined,
         lastSeen: new Date(),

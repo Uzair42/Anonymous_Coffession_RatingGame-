@@ -24,9 +24,16 @@ export default function Submit() {
     
     const data = await res.json();
     if (res.ok) {
-      setStatus({ type: 'success', msg: 'CONFESSION IS LIVE.' });
+      setStatus({ type: 'success', msg: 'CONFESSION LOCKED. (Going live for everyone in 5 mins)' });
       setBodyText('');
-      setAuthorName('');
+      if (data.confession && data.confession._id) {
+        const myIds = JSON.parse(localStorage.getItem('myConfessionIds') || '[]');
+        myIds.push(data.confession._id);
+        localStorage.setItem('myConfessionIds', JSON.stringify(myIds));
+      }
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 1500);
     } else {
       setStatus({ type: 'error', msg: data.error || 'ERROR.' });
     }

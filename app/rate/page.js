@@ -20,6 +20,7 @@ const getCleanDisplayName = (fullName) => {
 };
 
 export default function Rate() {
+  const [ratingSystem, setRatingSystem] = useState('5-Star');
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedTarget, setExpandedTarget] = useState(null);
@@ -31,19 +32,29 @@ export default function Rate() {
   const [comment, setComment] = useState('');
   const [status, setStatus] = useState({ type: '', msg: '' });
 
-  const fetchRatings = () => {
-    fetch('/api/ratings')
+  const fetchRatings = (system) => {
+    setLoading(true);
+    const endpoint = system === '7-Star' ? '/api/class-ratings' : '/api/ratings';
+    fetch(endpoint)
       .then(res => res.json())
       .then(data => {
-        setRatings(Array.isArray(data) ? data : []);
+        let sortedData = Array.isArray(data) ? data : [];
+        if (system === '7-Star') {
+          // Sort 7-star classmates based on highest ratings count and score for the leaderboard
+          sortedData = sortedData.filter(r => r.count > 0).sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            return b.count - a.count;
+          });
+        }
+        setRatings(sortedData);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   };
 
   useEffect(() => {
-    fetchRatings();
-  }, []);
+    fetchRatings(ratingSystem);
+  }, [ratingSystem]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -67,7 +78,7 @@ export default function Rate() {
       setTargetName('');
       setScore(0);
       setComment('');
-      fetchRatings();
+      fetchRatings(ratingSystem);
     } else {
       setStatus({ type: 'error', msg: data.error || 'ERROR.' });
     }
@@ -187,13 +198,30 @@ export default function Rate() {
           animate={{ opacity: 1, x: 0 }}
           className="lg:w-2/3 w-full space-y-6"
         >
-          <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
             <div className="flex items-center gap-3">
               <Trophy className="w-8 h-8 text-[#c0ff00]" />
               <h2 className="text-3xl font-black uppercase text-white tracking-widest">LEADERBOARD</h2>
             </div>
-            <div className="bg-white/5 border border-white/10 px-4 py-2 rounded-full">
-              <span className="text-sm font-bold text-gray-400">Top Rated targets</span>
+            
+            {/* System Toggle TABS */}
+            <div className="bg-white/5 border border-white/10 p-1 rounded-2xl flex gap-1">
+              <button 
+                onClick={() => setRatingSystem('5-Star')}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                  ratingSystem === '5-Star' ? 'bg-[#c0ff00] text-black shadow-[0_0_15px_rgba(192,255,0,0.2)]' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                5-Star Rankings
+              </button>
+              <button 
+                onClick={() => setRatingSystem('7-Star')}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-colors cursor-pointer ${
+                  ratingSystem === '7-Star' ? 'bg-[#c0ff00] text-black shadow-[0_0_15px_rgba(192,255,0,0.2)]' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                7-Star Class Roster
+              </button>
             </div>
           </div>
           
@@ -203,149 +231,158 @@ export default function Rate() {
             </div>
           ) : ratings.length === 0 ? (
             <div className="glass-card p-16 text-center border-dashed">
-              <p className="text-2xl font-black uppercase text-gray-500">NO RATINGS DEPLOYED YET.</p>
+              <p className="text-2xl font-black uppercase text-gray-500">NO {ratingSystem.toUpperCase()} RATINGS SECURED YET.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {ratings.map((r, i) => (
-                <motion.div 
-                  key={r._id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="glass-card overflow-hidden group border-l-4 border-[#c0ff00] transition-colors"
-                >
-                  {/* Card Header (Click to toggle expansion) */}
-                  <div 
-                    onClick={() => toggleExpand(r._id)}
-                    className="p-6 flex flex-col sm:flex-row items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+              {ratings.map((r, i) => {
+                const isSeven = ratingSystem === '7-Star';
+                const displayName = getCleanDisplayName(isSeven ? r.targetStudentName : r._id);
+                const averageScore = Number(isSeven ? r.score : r.averageScore) || 0;
+                const count = Number(r.count) || 0;
+                const breakdown = r.breakdown || {};
+                const reviews = Array.isArray(r.reviews) ? r.reviews : [];
+                
+                return (
+                  <motion.div 
+                    key={r._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="glass-card overflow-hidden group border-l-4 border-[#c0ff00] transition-colors"
                   >
-                    <div className="flex items-center gap-6 w-full sm:w-auto mb-4 sm:mb-0">
-                      <span className="text-4xl font-black text-gray-700 w-12 text-center group-hover:text-white transition-colors">#{i + 1}</span>
-                      <span className="text-2xl font-black uppercase text-white">{getCleanDisplayName(r._id)}</span>
-                    </div>
-                    <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
-                      <div className="flex flex-col items-end">
-                        <div className="flex items-center gap-2 text-[#c0ff00]">
-                          <span className="font-black text-4xl">{r.averageScore.toFixed(1)}</span>
-                          <Star className="w-8 h-8 fill-current" />
+                    {/* Card Header (Click to toggle expansion) */}
+                    <div 
+                      onClick={() => toggleExpand(r._id)}
+                      className="p-6 flex flex-col sm:flex-row items-center justify-between cursor-pointer hover:bg-white/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-6 w-full sm:w-auto mb-4 sm:mb-0">
+                        <span className="text-4xl font-black text-gray-700 w-12 text-center group-hover:text-white transition-colors">#{i + 1}</span>
+                        <span className="text-2xl font-black uppercase text-white">{displayName}</span>
+                      </div>
+                      <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+                        <div className="flex flex-col items-end">
+                          <div className="flex items-center gap-2 text-[#c0ff00]">
+                            <span className="font-black text-4xl">{averageScore.toFixed(1)}</span>
+                            <Star className="w-8 h-8 fill-current" />
+                          </div>
+                          <span className="font-bold text-xs text-gray-400 uppercase tracking-widest mt-1 font-mono">
+                            {count} VOTE{count !== 1 && 'S'} ({ratingSystem})
+                          </span>
                         </div>
-                        <span className="font-bold text-xs text-gray-400 uppercase tracking-widest mt-1">
-                          {r.count} VOTE{r.count !== 1 && 'S'}
-                        </span>
-                      </div>
-                      <div className="text-gray-400 hover:text-white transition-colors pl-4 hidden sm:block">
-                        {expandedTarget === r._id ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+                        <div className="text-gray-400 hover:text-white transition-colors pl-4 hidden sm:block">
+                          {expandedTarget === r._id ? <ChevronUp className="w-6 h-6" /> : <ChevronDown className="w-6 h-6" />}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Play Store Rating Breakdown & Reviews Panel */}
-                  <AnimatePresence>
-                    {expandedTarget === r._id && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="border-t border-white/10 bg-black/40 p-6 md:p-8"
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
-                          {/* Column 1: Rating breakdown */}
-                          <div className="md:col-span-2 space-y-4">
-                            <h4 className="text-gray-400 font-bold uppercase text-xs tracking-widest">Rating Breakdown</h4>
-                            <div className="flex items-center gap-6">
-                              <span className="text-6xl md:text-7xl font-black text-white">{r.averageScore.toFixed(1)}</span>
-                              <div className="space-y-1">
-                                <div className="flex text-[#c0ff00]">
-                                  {[1, 2, 3, 4, 5].map((star) => (
-                                    <Star 
-                                      key={star} 
-                                      className={`w-5 h-5 ${star <= Math.round(r.averageScore) ? 'fill-[#c0ff00] text-[#c0ff00]' : 'text-gray-600'}`} 
-                                    />
-                                  ))}
+                    {/* Play Store Rating Breakdown & Reviews Panel */}
+                    <AnimatePresence>
+                      {expandedTarget === r._id && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="border-t border-white/10 bg-black/40 p-6 md:p-8"
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-5 gap-8 items-start">
+                            {/* Column 1: Rating breakdown */}
+                            <div className="md:col-span-2 space-y-4">
+                              <h4 className="text-gray-400 font-bold uppercase text-xs tracking-widest">Rating Breakdown</h4>
+                              <div className="flex items-center gap-6">
+                                <span className="text-6xl md:text-7xl font-black text-white">{averageScore.toFixed(1)}</span>
+                                <div className="space-y-1">
+                                  <div className="flex text-[#c0ff00]">
+                                    {(isSeven ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5]).map((star) => (
+                                      <Star 
+                                        key={star} 
+                                        className={`w-5 h-5 ${star <= Math.round(averageScore) ? 'fill-[#c0ff00] text-[#c0ff00]' : 'text-gray-600'}`} 
+                                      />
+                                    ))}
+                                  </div>
+                                  <div className="text-xs font-bold text-gray-400 uppercase tracking-widest font-mono">
+                                    {count} TOTAL RATING{count !== 1 && 'S'}
+                                  </div>
                                 </div>
-                                <div className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                  {r.count} TOTAL RATING{r.count !== 1 && 'S'}
-                                </div>
+                              </div>
+
+                              {/* Horizontal Distribution Bars */}
+                              <div className="space-y-2 mt-4">
+                                {(isSeven ? [7, 6, 5, 4, 3, 2, 1] : [5, 4, 3, 2, 1]).map((starNum) => {
+                                  const starCount = breakdown[starNum] || 0;
+                                  const starPercent = count === 0 ? 0 : Math.round((starCount / count) * 100);
+                                  return (
+                                    <div key={starNum} className="flex items-center gap-3">
+                                      <span className="text-xs font-bold text-gray-400 w-3">{starNum}</span>
+                                      <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                        <motion.div 
+                                          initial={{ width: 0 }}
+                                          animate={{ width: `${starPercent}%` }}
+                                          transition={{ duration: 0.8, ease: "easeOut" }}
+                                          className="h-full bg-[#c0ff00] rounded-full"
+                                        />
+                                      </div>
+                                      <span className="text-xs font-bold text-gray-500 w-8 text-right font-mono">{starPercent}%</span>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
 
-                            {/* Horizontal Distribution Bars */}
-                            <div className="space-y-2 mt-4">
-                              {[5, 4, 3, 2, 1].map((starNum) => {
-                                const starCount = r.breakdown?.[starNum] || 0;
-                                const starPercent = r.count === 0 ? 0 : Math.round((starCount / r.count) * 100);
-                                return (
-                                  <div key={starNum} className="flex items-center gap-3">
-                                    <span className="text-xs font-bold text-gray-400 w-3">{starNum}</span>
-                                    <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
-                                      <motion.div 
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${starPercent}%` }}
-                                        transition={{ duration: 0.8, ease: "easeOut" }}
-                                        className="h-full bg-[#c0ff00] rounded-full"
-                                      />
-                                    </div>
-                                    <span className="text-xs font-bold text-gray-500 w-8 text-right">{starPercent}%</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                            {/* Column 2: Reviews List */}
+                            <div className="md:col-span-3 space-y-4">
+                              <h4 className="text-gray-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
+                                <MessageSquare className="w-4 h-4 text-[#c0ff00]" />
+                                Reviews History ({reviews.length})
+                              </h4>
 
-                          {/* Column 2: Reviews List */}
-                          <div className="md:col-span-3 space-y-4">
-                            <h4 className="text-gray-400 font-bold uppercase text-xs tracking-widest flex items-center gap-2">
-                              <MessageSquare className="w-4 h-4 text-[#c0ff00]" />
-                              Reviews History ({r.reviews?.length || 0})
-                            </h4>
-
-                            <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
-                              {!r.reviews || r.reviews.length === 0 ? (
-                                <p className="text-gray-600 italic uppercase font-bold text-sm py-4">No reviews have been penned yet.</p>
-                              ) : (
-                                r.reviews.map((rev, index) => (
-                                  <div key={index} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
-                                    <div className="flex items-center justify-between flex-wrap gap-2">
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-sans font-bold text-[#c0ff00]">{rev.alias}</span>
-                                        <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-black uppercase">Voter</span>
+                              <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4 scrollbar-thin">
+                                {reviews.length === 0 ? (
+                                  <p className="text-gray-600 italic uppercase font-bold text-sm py-4">No reviews have been penned yet.</p>
+                                ) : (
+                                  reviews.map((rev, index) => (
+                                    <div key={index} className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2">
+                                      <div className="flex items-center justify-between flex-wrap gap-2">
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-sans font-bold text-[#c0ff00]">{rev.alias}</span>
+                                          <span className="text-[10px] bg-white/10 text-gray-400 px-2 py-0.5 rounded-full font-black uppercase tracking-wider">Voter</span>
+                                        </div>
+                                        <div className="flex text-[#c0ff00]">
+                                          {(isSeven ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 3, 4, 5]).map((star) => (
+                                            <Star 
+                                              key={star} 
+                                              className={`w-3.5 h-3.5 ${star <= rev.score ? 'fill-[#c0ff00] text-[#c0ff00]' : 'text-gray-700'}`} 
+                                            />
+                                          ))}
+                                        </div>
                                       </div>
-                                      <div className="flex text-[#c0ff00]">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                          <Star 
-                                            key={star} 
-                                            className={`w-3.5 h-3.5 ${star <= rev.score ? 'fill-[#c0ff00] text-[#c0ff00]' : 'text-gray-700'}`} 
-                                          />
-                                        ))}
+                                      {rev.comment ? (
+                                        <p className="text-gray-200 text-sm font-sans font-medium break-words leading-relaxed">{rev.comment}</p>
+                                      ) : (
+                                        <p className="text-gray-500 text-xs italic font-sans uppercase">Rated {rev.score} star{rev.score !== 1 && 's'} without a detailed review.</p>
+                                      )}
+                                      <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1 font-mono">
+                                        <Calendar className="w-3 h-3" />
+                                        {new Date(rev.createdAt).toLocaleDateString(undefined, {
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        })}
                                       </div>
                                     </div>
-                                    {rev.comment ? (
-                                      <p className="text-gray-200 text-sm font-sans font-medium break-words leading-relaxed">{rev.comment}</p>
-                                    ) : (
-                                      <p className="text-gray-500 text-xs italic font-sans uppercase">Rated {rev.score} star{rev.score !== 1 && 's'} without a detailed review.</p>
-                                    )}
-                                    <div className="text-[10px] text-gray-500 font-bold flex items-center gap-1">
-                                      <Calendar className="w-3 h-3" />
-                                      {new Date(rev.createdAt).toLocaleDateString(undefined, {
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      })}
-                                    </div>
-                                  </div>
-                                ))
-                              )}
+                                  ))
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.div>
-              ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </motion.div>

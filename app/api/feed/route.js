@@ -15,12 +15,23 @@ export async function GET(req) {
       Rating.find().lean()
     ]);
 
-    const formattedConfessions = confessions.map(c => ({
+    // 5-minute cooling window:
+    const now = new Date();
+    const visibleConfessions = confessions.filter(c => {
+      const timeDiffMs = now - new Date(c.createdAt);
+      const isAuthor = c.deviceFingerprint?.ip === clientInfo.ip;
+      return timeDiffMs >= 5 * 60 * 1000 || isAuthor;
+    });
+
+    const formattedConfessions = visibleConfessions.map(c => ({
       _id: c._id,
       bodyText: c.bodyText,
       authorName: c.authorName,
       createdAt: c.createdAt,
       feedType: 'confession',
+      deviceFingerprint: {
+        ip: c.deviceFingerprint?.ip
+      },
       reactions: c.reactions?.map(r => ({
         emoji: r.emoji,
         count: r.users?.length || 0,
