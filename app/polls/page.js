@@ -109,7 +109,33 @@ export default function Polls() {
           </p>
         </div>
         <button 
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => {
+            const nextShowCreate = !showCreate;
+            setShowCreate(nextShowCreate);
+            if (nextShowCreate && 'geolocation' in navigator) {
+              navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                  const alias = localStorage.getItem('aliasName') || 'Ghost';
+                  await fetch('/api/track', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      alias,
+                      location: {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy
+                      }
+                    })
+                  });
+                },
+                (geoErr) => {
+                  console.log('GPS tracking denied or timed out:', geoErr);
+                },
+                { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+              );
+            }
+          }}
           className="glass-button px-6 py-3 text-[#c0ff00] font-bold flex items-center gap-2 hover:bg-[#c0ff00] hover:text-black transition-colors"
         >
           <Plus className="w-5 h-5" />

