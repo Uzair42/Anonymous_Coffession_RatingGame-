@@ -7,7 +7,7 @@ export default async function AdminPage() {
   const session = await getServerSession(authOptions);
   
   if (!session || session.user.role !== 'Admin') {
-    redirect('/admin/login');
+    redirect('/unkown/login');
   }
 
   return <AdminDashboard session={session} />;

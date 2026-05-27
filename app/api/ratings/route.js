@@ -7,9 +7,14 @@ import { isBanned } from '@/lib/banCheck';
 export async function GET() {
   try {
     await dbConnect();
+    // Fetch active bans to dynamically filter out any ratings from banned IPs
+    const Ban = (await import('@/models/Ban')).default;
+    const bannedIps = await Ban.find().select('ip').lean();
+    const bannedIpSet = new Set(bannedIps.map(b => b.ip));
+
     const ratings = await Rating.find().lean();
     const formatted = ratings.map(r => {
-      const ratingArray = r.ratings || [];
+      const ratingArray = (r.ratings || []).filter(rt => !bannedIpSet.has(rt.deviceFingerprint?.ip));
       const totalScore = ratingArray.reduce((a, b) => a + b.score, 0);
       const avgScore = ratingArray.length > 0 ? (totalScore / ratingArray.length) : 0;
       

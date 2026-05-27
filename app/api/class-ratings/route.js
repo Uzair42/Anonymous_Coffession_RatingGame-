@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/db';
 import ClassRating from '@/models/ClassRating';
 import { getClientInfo } from '@/lib/clientInfo';
+import { isBanned } from '@/lib/banCheck';
 
 const studentNames = [
   "Abdullah S/o Asad Rasheed",
@@ -81,8 +82,13 @@ export async function GET(req) {
     // Fetch clean list
     const finalStudents = await ClassRating.find().lean();
 
+    // Fetch active bans to dynamically filter out any ratings from banned IPs
+    const Ban = (await import('@/models/Ban')).default;
+    const bannedIps = await Ban.find().select('ip').lean();
+    const bannedIpSet = new Set(bannedIps.map(b => b.ip));
+
     const formattedRatings = finalStudents.map(student => {
-      const ratingArray = student.ratings || [];
+      const ratingArray = (student.ratings || []).filter(r => !bannedIpSet.has(r.deviceFingerprint?.ip));
       const totalScore = ratingArray.reduce((sum, r) => sum + r.score, 0);
       const avgScore = ratingArray.length > 0 ? (totalScore / ratingArray.length) : 0;
       
@@ -133,6 +139,10 @@ export async function POST(req) {
 
     const clientInfo = getClientInfo(req);
     await dbConnect();
+
+    if (await isBanned(clientInfo.ip)) {
+      return NextResponse.json({ error: 'Your device has been banned.' }, { status: 403 });
+    }
 
     let student = await ClassRating.findOne({ targetStudentName });
     

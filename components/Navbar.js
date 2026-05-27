@@ -15,7 +15,7 @@ const links = [
 export default function Navbar() {
   const pathname = usePathname();
 
-  if (pathname.startsWith('/admin')) return null;
+  if (pathname.startsWith('/admin') || pathname.startsWith('/unkown')) return null;
 
   return (
     <div className="fixed bottom-6 md:bottom-10 left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-[480px]">
