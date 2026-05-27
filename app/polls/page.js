@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, MessageSquare, Calendar, ChevronDown, ChevronUp, CheckCircle2 } from 'lucide-react';
+import { Plus, MessageSquare, Calendar, ChevronDown, ChevronUp, CheckCircle2, BarChart2 } from 'lucide-react';
 
 export default function Polls() {
   const [polls, setPolls] = useState([]);
@@ -18,18 +18,73 @@ export default function Polls() {
   const [newOptions, setNewOptions] = useState('');
   const [createStatus, setCreateStatus] = useState({ type: '', msg: '' });
 
-  const fetchPolls = () => {
-    fetch('/api/polls')
-      .then(res => res.json())
-      .then(data => {
-        setPolls(Array.isArray(data) ? data : []);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+  const [toasts, setToasts] = useState([]);
+  const [notifiedIds, setNotifiedIds] = useState(new Set());
+  const isFirstLoad = useRef(true);
+
+  const pollsRef = useRef(polls);
+  const notifiedIdsRef = useRef(notifiedIds);
+
+  useEffect(() => {
+    pollsRef.current = polls;
+    notifiedIdsRef.current = notifiedIds;
+  });
+
+  const fetchPolls = async (showNotifications = false) => {
+    try {
+      const res = await fetch('/api/polls');
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : [];
+
+      if (isFirstLoad.current) {
+        const initialSet = new Set(items.map(p => p._id));
+        setNotifiedIds(initialSet);
+        notifiedIdsRef.current = initialSet;
+        isFirstLoad.current = false;
+      } else if (showNotifications) {
+        const newItems = items.filter(item => {
+          return !notifiedIdsRef.current.has(item._id) && !pollsRef.current.some(old => old._id === item._id);
+        });
+
+        if (newItems.length > 0) {
+          newItems.forEach(item => {
+            const title = "📊 NEW POLL DEPLOYED";
+            const message = item.question;
+            const type = "poll";
+
+            const toastId = Date.now() + Math.random().toString();
+            setToasts(prev => [...prev, { id: toastId, title, message, type }]);
+
+            setTimeout(() => {
+              setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 6000);
+
+            setNotifiedIds(prev => {
+              const next = new Set(prev);
+              next.add(item._id);
+              return next;
+            });
+            notifiedIdsRef.current.add(item._id);
+          });
+        }
+      }
+
+      setPolls(items);
+      setLoading(false);
+    } catch (e) {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    fetchPolls();
+    fetchPolls(false);
+
+    // Refresh polls automatically in the background
+    const interval = setInterval(() => {
+      fetchPolls(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleVote = async (pollId) => {
@@ -361,6 +416,34 @@ export default function Polls() {
             );
           })
         )}
+      </div>
+
+      {/* Dynamic Glassmorphic Notification Center */}
+      <div className="fixed top-6 right-6 z-[9999] pointer-events-none flex flex-col gap-3 max-w-sm w-full px-4 sm:px-0">
+        <AnimatePresence>
+          {toasts.map(t => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, x: 0, scale: 1, y: 0 }}
+              exit={{ opacity: 0, x: 50, scale: 0.9, y: 10 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className="pointer-events-auto p-4 rounded-2xl border backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-start gap-3 w-full border-[#c0ff00]/30 bg-black/85 shadow-[#c0ff00]/5"
+            >
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-[#c0ff00]/20 text-[#c0ff00]">
+                <BarChart2 className="w-4 h-4" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
+                  {t.title}
+                </span>
+                <p className="text-white text-xs font-sans font-medium leading-relaxed break-words">
+                  {t.message}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </main>
   );

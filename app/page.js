@@ -1,7 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EyeOff, AlertTriangle, MessageSquare, Send, Star, CheckCircle2, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { EyeOff, AlertTriangle, MessageSquare, Send, Star, CheckCircle2, Calendar, ChevronDown, ChevronUp, BarChart2 } from 'lucide-react';
 import Link from 'next/link';
 
 const getCleanDisplayName = (fullName) => {
@@ -703,7 +703,20 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [dbError, setDbError] = useState(false);
 
-  const fetchData = async () => {
+  // Live notification and background tracking states
+  const [toasts, setToasts] = useState([]);
+  const [notifiedIds, setNotifiedIds] = useState(new Set());
+  const isFirstLoad = useRef(true);
+
+  const feedItemsRef = useRef(feedItems);
+  const notifiedIdsRef = useRef(notifiedIds);
+
+  useEffect(() => {
+    feedItemsRef.current = feedItems;
+    notifiedIdsRef.current = notifiedIds;
+  });
+
+  const fetchData = async (showNotifications = false) => {
     try {
       const [feedRes, settingsRes] = await Promise.all([
         fetch('/api/feed'),
@@ -713,7 +726,58 @@ export default function Home() {
       if (!feedRes.ok) throw new Error('DB Error');
       
       const feedData = await feedRes.json();
-      setFeedItems(Array.isArray(feedData) ? feedData : []);
+      const items = Array.isArray(feedData) ? feedData : [];
+
+      if (isFirstLoad.current) {
+        // Mark all initial items as seen so we don't alert for them
+        const initialSet = new Set(items.map(item => item._id));
+        setNotifiedIds(initialSet);
+        notifiedIdsRef.current = initialSet;
+        isFirstLoad.current = false;
+      } else if (showNotifications) {
+        // Find new items that weren't in our previous list
+        const newItems = items.filter(item => {
+          return !notifiedIdsRef.current.has(item._id) && !feedItemsRef.current.some(old => old._id === item._id);
+        });
+
+        if (newItems.length > 0) {
+          newItems.forEach(item => {
+            let title = "SYSTEM UPDATE";
+            let message = "A new transmission has been recorded.";
+            let type = "info";
+
+            if (item.feedType === 'confession') {
+              title = "🔥 NEW CONFESSION";
+              message = `"${item.bodyText.substring(0, 45)}${item.bodyText.length > 45 ? '...' : ''}"`;
+              type = "confession";
+            } else if (item.feedType === 'poll') {
+              title = "📊 NEW POLL DEPLOYED";
+              message = item.question;
+              type = "poll";
+            } else if (item.feedType === 'rating') {
+              title = "⭐ NEW RATING RECORDED";
+              message = `Someone rated ${getCleanDisplayName(item.targetStudentName)}`;
+              type = "rating";
+            }
+
+            const toastId = Date.now() + Math.random().toString();
+            setToasts(prev => [...prev, { id: toastId, title, message, type }]);
+
+            setTimeout(() => {
+              setToasts(prev => prev.filter(t => t.id !== toastId));
+            }, 6000);
+
+            setNotifiedIds(prev => {
+              const next = new Set(prev);
+              next.add(item._id);
+              return next;
+            });
+            notifiedIdsRef.current.add(item._id);
+          });
+        }
+      }
+
+      setFeedItems(items);
       
       if (settingsRes.ok) {
         const settingsData = await settingsRes.json();
@@ -730,7 +794,14 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(false);
+
+    // Enable live background updates without page reloading
+    const interval = setInterval(() => {
+      fetchData(true);
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const handleReact = async (id, emoji) => {
@@ -740,7 +811,7 @@ export default function Home() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ emoji, alias })
     });
-    fetchData(); 
+    fetchData(false); 
   };
 
   const handleComment = async (id, bodyText, authorName) => {
@@ -749,7 +820,7 @@ export default function Home() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bodyText, authorName })
     });
-    fetchData(); 
+    fetchData(false); 
   };
 
   const handleRateTarget = async (targetStudentName, score, alias, comment) => {
@@ -759,7 +830,7 @@ export default function Home() {
       body: JSON.stringify({ targetStudentName, score, alias, comment })
     });
     if (res.ok) {
-      fetchData();
+      fetchData(false);
       return true;
     }
     return false;
@@ -853,6 +924,44 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      {/* Dynamic Glassmorphic Notification Center */}
+      <div className="fixed top-6 right-6 z-[9999] pointer-events-none flex flex-col gap-3 max-w-sm w-full px-4 sm:px-0">
+        <AnimatePresence>
+          {toasts.map(t => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, x: 50, scale: 0.9, y: -10 }}
+              animate={{ opacity: 1, x: 0, scale: 1, y: 0 }}
+              exit={{ opacity: 0, x: 50, scale: 0.9, y: 10 }}
+              transition={{ type: "spring", stiffness: 350, damping: 25 }}
+              className={`pointer-events-auto p-4 rounded-2xl border backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex items-start gap-3 w-full border-white/10 ${
+                t.type === 'confession' ? 'bg-black/85 border-[#ff3300]/30 shadow-[#ff3300]/5' :
+                t.type === 'poll' ? 'bg-black/85 border-[#c0ff00]/30 shadow-[#c0ff00]/5' :
+                'bg-black/85 border-violet-500/30 shadow-violet-500/5'
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                t.type === 'confession' ? 'bg-[#ff3300]/20 text-[#ff3300]' :
+                t.type === 'poll' ? 'bg-[#c0ff00]/20 text-[#c0ff00]' :
+                'bg-violet-500/20 text-violet-400'
+              }`}>
+                {t.type === 'confession' ? <EyeOff className="w-4 h-4" /> :
+                 t.type === 'poll' ? <BarChart2 className="w-4 h-4" /> :
+                 <Star className="w-4 h-4" />}
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gray-400 block mb-0.5">
+                  {t.title}
+                </span>
+                <p className="text-white text-xs font-sans font-medium leading-relaxed break-words">
+                  {t.message}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </main>
   );
 }
