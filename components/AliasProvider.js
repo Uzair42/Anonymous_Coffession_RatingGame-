@@ -1,30 +1,30 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Ghost, Shield, EyeOff, Lock, ArrowRight, MessageSquare, Star, BarChart3, AlertCircle } from 'lucide-react';
+import { Ghost, Shield, EyeOff, Lock, ArrowRight, MessageSquare, Star, BarChart3, AlertCircle, Trophy, Gamepad2 } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 
-// Rotating heart-touching Urdu quotes for the hero strip
+// Rotating farewell-themed Urdu quotes
 const urduQuotes = [
   {
-    text: "وہ لمحے جو گزر گئے، وہ باتیں جو دل میں رہ گئیں — آج کہہ دو",
-    translation: "Those moments that passed, those words left in your heart — say them today"
+    text: "یہ ہمارا آخری مشترکہ کھیل ہے — ہنسو، بولو، اور یادیں بناؤ",
+    translation: "This is our last game together — laugh, speak, and make memories"
   },
   {
-    text: "کتنے سال ساتھ گزارے، کیا دل میں کچھ رہ گیا؟ اب وقت ہے بتانے کا",
-    translation: "So many years together — is something still unsaid? Now is the time"
+    text: "چار سال کا ساتھ ختم ہونے سے پہلے — اپنا حصہ ڈالو، اپنی بات کہو",
+    translation: "Before four years of togetherness ends — play your part, say your piece"
   },
   {
-    text: "شاید کوئی ہے جسے تم کچھ کہنا چاہتے ہو — یہاں سب سنتے ہیں، کوئی نہیں دیکھتا",
-    translation: "Maybe there's someone you want to say something to — everyone listens here, no one watches"
+    text: "الوداع کہنے سے پہلے، کچھ تو کہہ جاؤ — یہاں سب محفوظ ہے",
+    translation: "Before saying goodbye, say something — everything here is safe"
   },
   {
-    text: "وہ جملہ جو تم نے آج تک نہیں کہا — آج کہنے کا وقت ہے",
-    translation: "That sentence you've never said till today — today is the time"
+    text: "کلاس کے ہر چہرے میں ایک یاد ہے — آج اسے لفظوں میں ڈھالو",
+    translation: "In every face of the class is a memory — today, put it into words"
   },
   {
-    text: "دوستی ہو، شکریہ ہو، یا کوئی خاص بات — بے خوف کہو، تمہاری پہچان محفوظ ہے",
-    translation: "Friendship, gratitude, or something special — say it fearlessly, your identity is safe"
+    text: "آخری کھیل میں سب کو اپنا حصہ ڈالنا ہے — بے خوف، بے نام، بس سچا",
+    translation: "Everyone must play their part in the last game — fearless, nameless, just honest"
   },
 ];
 
@@ -54,7 +54,7 @@ export function AliasProvider({ children }) {
           localStorage.removeItem('aliasName');
           setAlias('');
           setStep(2);
-          setSubmitError('Your previous alias was claimed by another node.');
+          setSubmitError('Your player name was taken by another squad member. Pick a new one.');
         }
       }).catch(() => {
         setAlias(storedAlias);
@@ -93,10 +93,10 @@ export function AliasProvider({ children }) {
         setAlias(name);
         router.push('/class-ratings');
       } else {
-        setSubmitError(data.error || 'Failed to enter void.');
+        setSubmitError(data.error || 'Failed to join the game. Try again.');
       }
     } catch (err) {
-      setSubmitError('Connection error. Please try again.');
+      setSubmitError('Connection lost. Check your network and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -120,12 +120,11 @@ export function AliasProvider({ children }) {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-2xl flex flex-col items-center justify-start overflow-y-auto py-12 px-4 sm:px-8"
           >
-            {/* Ambient Cosmic Background */}
+            {/* Ambient Background */}
             <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
               <div className="absolute top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-[#c0ff00] opacity-5 blur-[120px] rounded-full animate-pulse"></div>
               <div className="absolute bottom-1/4 right-1/4 translate-x-1/2 translate-y-1/2 w-[300px] h-[300px] md:w-[600px] md:h-[600px] bg-[#ff3300] opacity-5 blur-[120px] rounded-full"></div>
-              {/* Extra warm amber glow for emotional warmth */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-amber-400 opacity-3 blur-[100px] rounded-full"></div>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[200px] h-[200px] md:w-[400px] md:h-[400px] bg-amber-400 opacity-[0.03] blur-[100px] rounded-full"></div>
             </div>
 
             <motion.div
@@ -140,24 +139,27 @@ export function AliasProvider({ children }) {
                 className="glass-card p-6 sm:p-10 border border-white/10 relative overflow-hidden flex flex-col items-center justify-center col-span-1 md:col-span-6"
               >
                 <div className="absolute -top-10 -right-10 w-24 h-24 bg-[#c0ff00]/10 blur-xl rounded-full"></div>
+
                 <motion.div
                   layout
                   className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-white/5 border border-[#c0ff00]/50 flex items-center justify-center mb-4"
                 >
-                  <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-[#c0ff00]" />
+                  <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-[#c0ff00]" />
                 </motion.div>
 
-                {/* Gateway Status Badge */}
+                {/* Live Game Status Badge */}
                 <div className="bg-[#c0ff00]/10 border border-[#c0ff00]/30 rounded-full px-3 py-1 flex items-center gap-2 mb-3">
                   <span className="w-2 h-2 rounded-full bg-[#c0ff00] animate-pulse"></span>
-                  <span className="text-[10px] sm:text-xs font-black uppercase text-[#c0ff00] tracking-widest">SECURE VOID CONNECTION</span>
+                  <span className="text-[10px] sm:text-xs font-black uppercase text-[#c0ff00] tracking-widest">🎮 FINAL ROUND — IT BATCH 2024</span>
                 </div>
 
                 <motion.h2 layout className="text-3xl sm:text-4xl md:text-5xl font-black text-white text-center uppercase tracking-tighter mb-2 leading-tight flex flex-wrap justify-center items-center gap-x-2 gap-y-1">
-                  <span>The</span> <span className="bg-[#c0ff00] text-black px-2 sm:px-3 rounded-lg whitespace-nowrap">Last Semester IT Batch Void</span>
+                  <span>IT Batch</span>{' '}
+                  <span className="bg-[#c0ff00] text-black px-2 sm:px-3 rounded-lg whitespace-nowrap">Farewell Game</span>
                 </motion.h2>
-                <motion.p layout className="text-gray-400 font-bold uppercase text-xs sm:text-sm tracking-widest text-center max-w-xl mt-2 leading-normal">
-                  A Fully Encrypted, Zero-Knowledge Space for the Last Semester IT Batch. No profiles. No tracking. Just pure, uncompromised connection.
+
+                <motion.p layout className="text-gray-400 font-bold text-xs sm:text-sm tracking-wide text-center max-w-xl mt-2 leading-relaxed">
+                  The last game of the last semester — played with the whole class, anonymously. Rate friends, drop confessions, share polls, and leave your mark forever. No one knows who you are. 🎓
                 </motion.p>
 
                 {/* ── ROTATING URDU QUOTE STRIP ── */}
@@ -171,7 +173,6 @@ export function AliasProvider({ children }) {
                       transition={{ duration: 0.5, ease: "easeInOut" }}
                       className="flex flex-col items-center gap-2"
                     >
-                      {/* Big Urdu Quote */}
                       <p
                         className="text-xl sm:text-2xl md:text-3xl text-center leading-loose text-[#ffd580]"
                         style={{
@@ -183,14 +184,13 @@ export function AliasProvider({ children }) {
                       >
                         {urduQuotes[currentQuoteIndex].text}
                       </p>
-                      {/* English translation — soft, small */}
                       <p className="text-[11px] sm:text-xs text-gray-500 italic font-sans text-center max-w-lg leading-relaxed">
                         {urduQuotes[currentQuoteIndex].translation}
                       </p>
                     </motion.div>
                   </AnimatePresence>
 
-                  {/* Dot indicators for quote pagination */}
+                  {/* Dot indicators */}
                   <div className="flex justify-center gap-1.5 mt-4">
                     {urduQuotes.map((_, i) => (
                       <button
@@ -210,7 +210,7 @@ export function AliasProvider({ children }) {
               <AnimatePresence mode="popLayout">
                 {step === 1 && (
                   <>
-                    {/* ── FEATURE CARD 1: Privacy Shield ── */}
+                    {/* ── CARD 1: Play Safe / Privacy ── */}
                     <motion.div
                       layout
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -223,11 +223,10 @@ export function AliasProvider({ children }) {
                         <EyeOff className="w-5 h-5 text-[#c0ff00]" />
                       </div>
                       <div>
-                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">100% Privacy Shield</h4>
+                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">🕵️ Play Safe — No One Knows You</h4>
                         <p className="text-gray-400 font-sans text-xs leading-relaxed mb-3">
-                          We never collect passwords, ask for emails, or save persistent cookies. Your real identity is physically impossible to link, trace, or extract. You are completely invisible.
+                          This is a judgment-free zone. No emails, no profiles, no sign-ups. Your real name never enters the game. Play however you feel — completely invisible to your classmates.
                         </p>
-                        {/* Urdu subtitle */}
                         <p
                           className="text-[#ffd580]/80 text-sm leading-loose text-right border-t border-white/5 pt-3"
                           style={{ fontFamily: "'Noto Nastaliq Urdu', serif", direction: 'rtl', lineHeight: '2' }}
@@ -240,7 +239,7 @@ export function AliasProvider({ children }) {
                       </div>
                     </motion.div>
 
-                    {/* ── FEATURE CARD 2: Encrypted Hashing ── */}
+                    {/* ── CARD 2: Safe to Speak ── */}
                     <motion.div
                       layout
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -253,11 +252,10 @@ export function AliasProvider({ children }) {
                         <Lock className="w-5 h-5 text-[#c0ff00]" />
                       </div>
                       <div>
-                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">Encrypted Hashing</h4>
+                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">🔐 What You Say, Stays Here</h4>
                         <p className="text-gray-400 font-sans text-xs leading-relaxed mb-3">
-                          All confessions, votes, and classmate reviews are fully decoupled from your credentials. IP connections are instantly hashed on transit and never saved in a readable database.
+                          Your confessions, votes, and reviews are completely disconnected from your identity. Everything you write is protected — no one in class can trace it back to you.
                         </p>
-                        {/* Urdu subtitle */}
                         <p
                           className="text-[#ffd580]/80 text-sm leading-loose text-right border-t border-white/5 pt-3"
                           style={{ fontFamily: "'Noto Nastaliq Urdu', serif", direction: 'rtl', lineHeight: '2' }}
@@ -270,7 +268,7 @@ export function AliasProvider({ children }) {
                       </div>
                     </motion.div>
 
-                    {/* ── FEATURE CARD 3: Anonymous Confessions ── */}
+                    {/* ── CARD 3: Farewell Confessions ── */}
                     <motion.div
                       layout
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -283,11 +281,10 @@ export function AliasProvider({ children }) {
                         <MessageSquare className="w-5 h-5 text-[#c0ff00]" />
                       </div>
                       <div>
-                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">Anonymous Confessions</h4>
+                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">💬 Drop a Farewell Confession</h4>
                         <p className="text-gray-400 font-sans text-xs leading-relaxed mb-3">
-                          Share secrets, hidden thoughts, and farewell letters onto a decentralized shared board. Speak your mind freely under a temporary alias that disappears when you want it to.
+                          That thing you always wanted to say to someone — a thank you, an apology, a shoutout, or just a funny memory. Drop it on the board. The whole class will see it. You won't.
                         </p>
-                        {/* Urdu subtitle */}
                         <p
                           className="text-[#ffd580]/80 text-sm leading-loose text-right border-t border-white/5 pt-3"
                           style={{ fontFamily: "'Noto Nastaliq Urdu', serif", direction: 'rtl', lineHeight: '2' }}
@@ -300,7 +297,7 @@ export function AliasProvider({ children }) {
                       </div>
                     </motion.div>
 
-                    {/* ── FEATURE CARD 4: Ratings & Polls ── */}
+                    {/* ── CARD 4: Rate Your Squad ── */}
                     <motion.div
                       layout
                       initial={{ opacity: 0, scale: 0.9, y: 10 }}
@@ -313,11 +310,10 @@ export function AliasProvider({ children }) {
                         <Star className="w-5 h-5 text-[#c0ff00]" />
                       </div>
                       <div>
-                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">Unlinkable Ratings & Polls</h4>
+                        <h4 className="text-white font-black uppercase text-sm tracking-wide mb-1">⭐ Rate Your Classmates — Respectfully</h4>
                         <p className="text-gray-400 font-sans text-xs leading-relaxed mb-3">
-                          Rate classmates anonymously with Play Store-style star metrics and comment boards. Participate in IT Batch polls with live progress updates and choice justifications.
+                          Give your classmates an honest, anonymous star rating. Share what you genuinely appreciate about them. Vote in class polls. Be kind — this is the final score that stays.
                         </p>
-                        {/* Urdu subtitle */}
                         <p
                           className="text-[#ffd580]/80 text-sm leading-loose text-right border-t border-white/5 pt-3"
                           style={{ fontFamily: "'Noto Nastaliq Urdu', serif", direction: 'rtl', lineHeight: '2' }}
@@ -330,7 +326,7 @@ export function AliasProvider({ children }) {
                       </div>
                     </motion.div>
 
-                    {/* ── DECRYPT GATEWAY BUTTON ── */}
+                    {/* ── JOIN GAME BUTTON ── */}
                     <motion.div
                       layout
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -343,9 +339,12 @@ export function AliasProvider({ children }) {
                         onClick={() => setStep(2)}
                         className="w-full bg-[#c0ff00] text-black font-black uppercase tracking-wider py-5 rounded-3xl hover:bg-white transition-all flex items-center justify-center gap-2 group cursor-pointer shadow-[0_0_30px_rgba(192,255,0,0.15)] active:scale-[0.98]"
                       >
-                        DECRYPT GATEWAY
+                        🎮 JOIN THE FAREWELL GAME
                         <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                       </button>
+                      <p className="text-center text-[10px] text-gray-600 mt-2 font-sans uppercase tracking-widest">
+                        Free to play · No sign-up · 100% anonymous · Your identity is never revealed
+                      </p>
                     </motion.div>
                   </>
                 )}
@@ -363,13 +362,15 @@ export function AliasProvider({ children }) {
                   >
                     <div className="flex justify-center mb-6">
                       <div className="w-16 h-16 rounded-full bg-white/5 border border-[#c0ff00]/50 flex items-center justify-center animate-pulse">
-                        <Ghost className="w-8 h-8 text-[#c0ff00]" />
+                        <Gamepad2 className="w-8 h-8 text-[#c0ff00]" />
                       </div>
                     </div>
 
-                    <h2 className="text-3xl font-black text-[#c0ff00] text-center uppercase tracking-tighter mb-2">Choose Your Ghost Name</h2>
+                    <h2 className="text-3xl font-black text-[#c0ff00] text-center uppercase tracking-tighter mb-2">
+                      Pick Your Player Name
+                    </h2>
 
-                    {/* Urdu encouragement on the name-pick step */}
+                    {/* Urdu on name-pick step */}
                     <p
                       className="text-[#ffd580]/90 text-lg sm:text-xl text-center leading-loose mb-2"
                       style={{ fontFamily: "'Noto Nastaliq Urdu', serif", direction: 'rtl', lineHeight: '2.2' }}
@@ -381,15 +382,15 @@ export function AliasProvider({ children }) {
                     </p>
 
                     <p className="text-gray-300 text-center text-sm font-sans mb-8 max-w-md mx-auto leading-relaxed">
-                      Choose <span className="text-[#c0ff00] font-bold">absolutely any name you want</span>—from a code name, funny alias, or an emoji.
-                      No registrations, no real name checks, and zero tracking logs. Your real identity remains 100% uncompromised.
+                      Choose <span className="text-[#c0ff00] font-bold">any player name</span> — a nickname, a funny alias, a code name, or even an emoji. 
+                      No real names, no registration, no tracking. Your classmates will only ever see this name.
                     </p>
 
                     <form onSubmit={handleSave} className="flex flex-col gap-4 max-w-md mx-auto">
                       <input
                         required
                         disabled={isSubmitting}
-                        placeholder="e.g. Ghost, Batman, IT-Student"
+                        placeholder="e.g. Shadow, Panda, IT-Legend 👾"
                         value={inputName}
                         onChange={e => setInputName(e.target.value)}
                         className="w-full bg-white/5 border border-white/20 rounded-2xl p-4 text-white text-center font-bold focus:outline-none focus:border-[#c0ff00] transition-colors"
@@ -411,7 +412,7 @@ export function AliasProvider({ children }) {
                         disabled={isSubmitting}
                         className="w-full bg-[#c0ff00] text-black font-black uppercase py-4 rounded-2xl hover:bg-white transition-colors cursor-pointer shadow-[0_0_20px_rgba(192,255,0,0.1)] disabled:opacity-50"
                       >
-                        {isSubmitting ? 'SECURING GATEWAY...' : 'ENTER THE VOID'}
+                        {isSubmitting ? 'JOINING GAME...' : '🎮 START PLAYING'}
                       </button>
 
                       <button
@@ -419,7 +420,7 @@ export function AliasProvider({ children }) {
                         onClick={() => setStep(1)}
                         className="text-xs text-gray-500 font-bold uppercase hover:text-white transition-colors text-center mt-2 cursor-pointer"
                       >
-                        &larr; Back to Manifesto
+                        &larr; Back to Game Info
                       </button>
                     </form>
                   </motion.div>
